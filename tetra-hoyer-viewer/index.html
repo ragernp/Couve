@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Interactive 3D viewer for the Tetra Hoyer Frigus SF1200-N1 continuous ice-cream freezer, machine no. Z138, 1079 – with dimensions, specifications and drawings.">
+  <title>Frigus SF1200-N1 3D Viewer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231458b8'/%3E%3Cpath d='M9 7h12v18H9z' fill='%23dfe5ec'/%3E%3Ccircle cx='15' cy='15' r='4' fill='%231458b8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div class="titles">
+        <h1>Hoyer Frigus SF1200-N1</h1>
+        <p><span class="chip">Machine No. Z138, 1079</span><span class="sub">Continuous ice-cream freezer</span></p>
+      </div>
+    </div>
+    <button id="themeBtn" class="icon-btn" aria-label="Toggle light / dark theme" title="Toggle theme">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2 6 6M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+    </button>
+  </header>
+
+  <main class="app">
+    <section class="stage" id="stage" aria-label="3D model">
+      <canvas id="gl" tabindex="0" aria-label="Interactive 3D model of the freezer. Drag to rotate, scroll or pinch to zoom."></canvas>
+      <div id="labels" aria-hidden="false"></div>
+
+      <div class="views" role="toolbar" aria-label="Camera views">
+        <button data-view="iso" class="chip-btn active">Iso</button>
+        <button data-view="front" class="chip-btn">Front</button>
+        <button data-view="side" class="chip-btn">Side</button>
+        <button data-view="back" class="chip-btn">Rear</button>
+        <button data-view="top" class="chip-btn">Top</button>
+      </div>
+
+      <div class="hint" id="hint">Drag to rotate · Pinch / scroll to zoom</div>
+
+      <div class="loading" id="loading"><div class="spinner"></div><span>Building model…</span></div>
+      <div class="nogl" id="nogl" hidden>
+        <h2>3D view unavailable</h2>
+        <p>Your browser could not start WebGL. The <strong>Specs</strong> and <strong>Drawings</strong> tabs still work.</p>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <button class="sheet-handle" id="sheetHandle" aria-label="Expand or collapse panel" aria-expanded="false"><span></span></button>
+      <nav class="tabs" role="tablist">
+        <button role="tab" id="t-view" aria-controls="p-view" aria-selected="true">View</button>
+        <button role="tab" id="t-parts" aria-controls="p-parts" aria-selected="false">Parts</button>
+        <button role="tab" id="t-specs" aria-controls="p-specs" aria-selected="false">Specs</button>
+        <button role="tab" id="t-draw" aria-controls="p-draw" aria-selected="false">Drawings</button>
+      </nav>
+
+      <div class="tabpanes">
+        <!-- VIEW -->
+        <section role="tabpanel" id="p-view" aria-labelledby="t-view" class="pane active">
+          <div class="toggles">
+            <label class="switch"><input type="checkbox" id="optXray"><span class="track"></span><span class="lab">X-ray shell</span></label>
+            <label class="switch"><input type="checkbox" id="optDims" checked><span class="track"></span><span class="lab">Dimensions</span></label>
+            <label class="switch"><input type="checkbox" id="optHot" checked><span class="track"></span><span class="lab">Part markers</span></label>
+            <label class="switch"><input type="checkbox" id="optScale"><span class="track"></span><span class="lab">Scale figure (1.75 m)</span></label>
+            <label class="switch"><input type="checkbox" id="optRun"><span class="track"></span><span class="lab">Simulate running</span></label>
+            <label class="switch"><input type="checkbox" id="optSpin"><span class="track"></span><span class="lab">Auto-rotate</span></label>
+          </div>
+          <div class="sliders">
+            <label class="slider"><span>Open service doors <output id="outDoors">0%</output></span><input type="range" id="optDoors" min="0" max="100" value="0"></label>
+            <label class="slider"><span>Exploded view <output id="outExp">0%</output></span><input type="range" id="optExp" min="0" max="100" value="0"></label>
+          </div>
+          <div class="envelope">
+            <div><b>193</b><small>cm length</small></div>
+            <div><b>84</b><small>cm width</small></div>
+            <div><b>200</b><small>cm height</small></div>
+            <div><b>≈1.2</b><small>tonnes</small></div>
+          </div>
+          <p class="note">Exterior follows reference photos of SF1200 units; the interior is schematic. Dimensions are the dealer-listed envelope.</p>
+          <button class="ghost-btn" id="resetBtn">Reset view</button>
+        </section>
+
+        <!-- PARTS -->
+        <section role="tabpanel" id="p-parts" aria-labelledby="t-parts" class="pane" hidden>
+          <article class="partcard" id="partCard" aria-live="polite">
+            <h3 id="pcTitle">Select a part</h3>
+            <p id="pcText">Tap a numbered marker on the model or pick a part below to zoom in and read what it does.</p>
+          </article>
+          <ol class="partlist" id="partList"></ol>
+        </section>
+
+        <!-- SPECS -->
+        <section role="tabpanel" id="p-specs" aria-labelledby="t-specs" class="pane" hidden>
+          <div id="specs"></div>
+          <p class="legend"><span class="src you">you</span> supplied · <span class="src listing">listing</span> dealer listing for an SF1200-N1</p>
+          <div class="callout">
+            <b>Check the nameplate.</b> Ratings and dimensions come from a used-equipment listing for a different unit of the same model (S/N FRI250215, built 2005). Machine Z138 / 1079 may differ.
+          </div>
+          <h3 class="h3">Sources</h3>
+          <ul class="sources" id="sources"></ul>
+          <p class="note">Unofficial visualisation. Not affiliated with or endorsed by Tetra Pak. Product names belong to their owners.</p>
+        </section>
+
+        <!-- DRAWINGS -->
+        <section role="tabpanel" id="p-draw" aria-labelledby="t-draw" class="pane" hidden>
+          <div id="drawings"></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <noscript><p style="padding:2rem">This viewer needs JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
